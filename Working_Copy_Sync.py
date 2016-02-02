@@ -22,12 +22,14 @@ class WorkingCopySync():
 		self.key = self._get_key()
 		self.install_path = self._find_install_path()
 		self.config = self._get_config()
-		self.repo = self.config['repo-name']
-		# build the path relative to the repo-root
-		self.path = editor.get_path()[len(self.config['repo-root'])+1:]
-		
+		self.repo, self.path = None, None
+		if self.config: 
+			self.repo = self.config['repo-name']
+			# build the path relative to the repo-root
+			self.path = editor.get_path()[len(self.config['repo-root'])+1:]
+	
 	@property
-	def full_path(self):
+	def repo_path(self):
 		return os.path.join(self.repo, self.path)		
 		
 	def _get_config(self, path=None):
@@ -61,13 +63,6 @@ class WorkingCopySync():
 		'''
 		app_dir = os.path.realpath(os.path.abspath(os.path.dirname(__file__)))
 		return os.path.relpath(app_dir, DOCS_DIR)
-
-	def _get_repo_info(self):
-		# get the relative path and remove the leading /
-		fullPath = editor.get_path()[len(DOCS_DIR)+1:]
-		assert '/' in fullPath, '{} must be in a directory.'.format(fullPath)
-		repo, path = fullPath.split('/', 1)
-		return repo, path
 
 	def _send_to_working_copy(self, action, payload, x_callback_enabled=True):
 		x_callback = 'x-callback-url/' if x_callback_enabled else ''
@@ -133,12 +128,12 @@ class WorkingCopySync():
 
 	def overwrite_with_wc_copy(self):
 		action = 'read'
-		fmt = 'pythonista://{install_path}/Working_Copy_Sync.py?action=run&argv=overwrite_file&argv={full_path}&argv='
+		fmt = 'pythonista://{install_path}/Working_Copy_Sync.py?action=run&argv=overwrite_file&argv={path}&argv='
 		payload = {
 			'repo': self.repo,
 			'path': self.path,
 			'base64': '1',
-			'x-success': fmt.format(install_path=self.install_path, full_path=self.full_path)
+			'x-success': fmt.format(install_path=self.install_path, path=editor.get_path())
 		}
 		self._send_to_working_copy(action, payload)
 
@@ -152,10 +147,11 @@ class WorkingCopySync():
 	def present(self):
 		actions = OrderedDict()
 		actions['CLONE 	- Copy repo from Working Copy'] = self.copy_repo_from_wc
-		actions['FETCH 	- Overwrite file with WC version'] = self.overwrite_with_wc_copy
-		actions['PUSH 		- Send file to WC'] = self.push_current_file_to_wc
-		actions['PUSH UI 	- Send associated PYUI to WC'] = self.push_pyui_to_wc
-		actions['OPEN 		- Open repo in WC'] = self.open_repo_in_wc
+		if self.repo: 
+			actions['FETCH 	- Overwrite file with WC version'] = self.overwrite_with_wc_copy
+			actions['PUSH 		- Send file to WC'] = self.push_current_file_to_wc
+			actions['PUSH UI 	- Send associated PYUI to WC'] = self.push_pyui_to_wc
+			actions['OPEN 		- Open repo in WC'] = self.open_repo_in_wc
 		action = dialogs.list_dialog(title='Choose action', items=[key for key in actions])
 		if action:
 			actions[action]()
@@ -191,7 +187,8 @@ class WorkingCopySync():
 		with open(full_file_path, 'w') as f:
 			f.write(text)
 		editor.open_file(path)
-		console.hud_alert(path +' Updated')
+		_, filename = os.path.split(path)
+		console.hud_alert(filename + ' Updated')
 
 
 def main(url_action=None, url_args=None):
