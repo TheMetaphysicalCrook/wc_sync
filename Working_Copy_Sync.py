@@ -14,17 +14,38 @@ import zipfile
 from collections import OrderedDict
 
 DOCS_DIR = os.path.expanduser('~/Documents')
+CONFIG_FILE = '.wcsync'
 
 class WorkingCopySync():
 
 	def __init__(self):
 		self.key = self._get_key()
 		self.install_path = self._find_install_path()
-		self.repo, self.path = self._get_repo_info()
-
+		self.config = self._get_config()
+		self.repo = self.config['repo-name']
+		# build the path relative to the repo-root
+		self.path = editor.get_path()[len(self.config['repo-root'])+1:]
+		
 	@property
 	def full_path(self):
-		return os.path.join(self.repo, self.path)
+		return os.path.join(self.repo, self.path)		
+		
+	def _get_config(self, path=None):
+		''' Dind the config file for the repo recursively.
+				Don't look beyond the docs directory.
+		'''
+		config = None
+		if not path: 
+			path = os.path.dirname(editor.get_path())	
+		config_path = os.path.join(path, CONFIG_FILE)
+		if os.path.exists(config_path):
+			with open(config_path) as f:
+				config = json.loads(f.read())
+				config['repo-root'] = path
+		elif path != DOCS_DIR:
+			new_path = os.path.abspath(os.path.join(path, '..'))
+			config = self._get_config(new_path)
+		return config
 
 	def _get_key(self):
 		''' Retrieve the working copy key or prompt for a new one.
@@ -156,6 +177,8 @@ class WorkingCopySync():
 		with zipfile.ZipFile(zip_file_location) as in_file:
 			in_file.extractall(dest)
 		os.remove(zip_file_location)
+		with open(os.path.join(dest, CONFIG_FILE), 'w') as config_file:
+			config_file.write(json.dumps({"repo-name": path}))
 		console.hud_alert(path + ' Downloaded')
 
 	def urlscheme_overwrite_file_with_wc_copy(self, path, b64_contents):
