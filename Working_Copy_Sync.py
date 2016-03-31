@@ -8,10 +8,14 @@ import keychain
 import os
 import shutil
 import sys
-import urllib
 import webbrowser as wb
 import zipfile
 from collections import OrderedDict
+
+try:
+	from urllib import urlencode
+except:
+	from urllib.parse import urlencode
 
 DOCS_DIR = os.path.expanduser('~/Documents')
 CONFIG_FILE = '.wcsync'
@@ -67,14 +71,14 @@ class WorkingCopySync():
 	def _send_to_working_copy(self, action, payload, x_callback_enabled=True):
 		x_callback = 'x-callback-url/' if x_callback_enabled else ''
 		payload['key'] = self.key
-		payload = urllib.urlencode(payload).replace('+', '%20')
+		payload = urlencode(payload).replace('+', '%20')
 		fmt = 'working-copy://{x_callback}{action}/?{payload}'
 		url = fmt.format(x_callback=x_callback, action=action, payload=payload)
 		wb.open(url)
 
 	def _get_repo_list(self):
 		action = 'repos'
-		fmt = 'pythonista://{install_path}/Working_Copy_Sync.py?action=run&argv=repo_list&argv='
+		fmt = 'pythonista3://{install_path}/Working_Copy_Sync.py?action=run&argv=repo_list&argv='
 		payload = {
 			'x-success': fmt.format(install_path=self.install_path)
 		}
@@ -89,7 +93,7 @@ class WorkingCopySync():
 			repo_name = dialogs.list_dialog(title='Select repo', items=repo_list)
 			if repo_name:
 				action = 'zip'
-				fmt = 'pythonista://{install_path}/Working_Copy_Sync.py?action=run&argv=copy_repo&argv={repo_name}&argv='
+				fmt = 'pythonista3://{install_path}/Working_Copy_Sync.py?action=run&argv=copy_repo&argv={repo_name}&argv='
 				payload = {
 					'repo': repo_name,
 					'x-success': fmt.format(install_path=self.install_path, repo_name=repo_name)
@@ -102,7 +106,7 @@ class WorkingCopySync():
 			'repo': self.repo,
 			'path': path,
 			'text': contents,
-			'x-success': 'pythonista://{repo}/{path}?'.format(repo=self.repo, path=path)
+			'x-success': 'pythonista3://{repo}/{path}?'.format(repo=self.repo, path=path)
 		}
 		self._send_to_working_copy(action, payload)
 
@@ -128,7 +132,7 @@ class WorkingCopySync():
 
 	def overwrite_with_wc_copy(self):
 		action = 'read'
-		fmt = 'pythonista://{install_path}/Working_Copy_Sync.py?action=run&argv=overwrite_file&argv={path}&argv='
+		fmt = 'pythonista3://{install_path}/Working_Copy_Sync.py?action=run&argv=overwrite_file&argv={path}&argv='
 		payload = {
 			'repo': self.repo,
 			'path': self.path,
