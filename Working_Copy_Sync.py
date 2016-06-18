@@ -172,7 +172,7 @@ class WorkingCopySync():
 			console.alert('Overwriting existing directory', button1='Continue')
 			shutil.rmtree(dest)
 		zip_file_location = os.path.join(DOCS_DIR, tmp_zip_location)
-		with open(zip_file_location, 'w') as out_file:
+		with open(zip_file_location, 'wb') as out_file:
 			out_file.write(base64.b64decode(b64_contents))
 		with zipfile.ZipFile(zip_file_location) as in_file:
 			in_file.extractall(dest)
