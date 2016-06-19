@@ -189,7 +189,7 @@ class WorkingCopySync():
 		except OSError as e:
 			if e.errno != errno.EEXIST:
 				raise e
-		with open(full_file_path, 'w') as f:
+		with open(full_file_path, 'wb') as f:
 			f.write(text)
 		editor.open_file(path)
 		_, filename = os.path.split(path)
