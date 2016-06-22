@@ -147,7 +147,7 @@ class WorkingCopySync():
 		payload = {
 			'repo': self.repo
 		}
-		self._send_to_working_copy(action, payload)
+		self._send_to_working_copy(action, payload, x_callback_enabled=False)
 
 	def present(self):
 		actions = OrderedDict()
