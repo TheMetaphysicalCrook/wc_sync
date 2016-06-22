@@ -14,9 +14,12 @@ from collections import OrderedDict
 
 try:
 	from urllib import urlencode
+	python_version = 2
 except:
 	from urllib.parse import urlencode
-
+	python_version = 3
+	
+PYTHONISTA_URL = 'pythonista3://'
 DOCS_DIR = os.path.expanduser('~/Documents')
 WC_FILENAME = os.path.split(__file__)[-1]
 CONFIG_FILE = '.wcsync'
@@ -79,9 +82,9 @@ class WorkingCopySync():
 
 	def _get_repo_list(self):
 		action = 'repos'
-		fmt = 'pythonista3://{install_path}/{wc_file}?action=run&argv=repo_list&argv='
+		fmt = '{pythonista_url}{install_path}/{wc_file}?action=run&argv=repo_list&argv='
 		payload = {
-			'x-success': fmt.format(install_path=self.install_path, wc_file=WC_FILENAME)
+			'x-success': fmt.format(pythonista_url=PYTHONISTA_URL, install_path=self.install_path, wc_file=WC_FILENAME)
 		}
 		self._send_to_working_copy(action, payload)
 
@@ -94,10 +97,10 @@ class WorkingCopySync():
 			repo_name = dialogs.list_dialog(title='Select repo', items=repo_list)
 			if repo_name:
 				action = 'zip'
-				fmt = 'pythonista3://{install_path}/{wc_file}?action=run&argv=copy_repo&argv={repo_name}&argv='
+				fmt = '{pythonista_url}{install_path}/{wc_file}?action=run&argv=copy_repo&argv={repo_name}&argv='
 				payload = {
 					'repo': repo_name,
-					'x-success': fmt.format(install_path=self.install_path, repo_name=repo_name, wc_file=WC_FILENAME)
+					'x-success': fmt.format(pythonista_url=PYTHONISTA_URL, install_path=self.install_path, repo_name=repo_name, wc_file=WC_FILENAME)
 				}
 				self._send_to_working_copy(action, payload)
 
@@ -107,7 +110,7 @@ class WorkingCopySync():
 			'repo': self.repo,
 			'path': path,
 			'text': contents,
-			'x-success': 'pythonista3://{repo}/{path}?'.format(repo=self.repo, path=path)
+			'x-success': '{pythonista_url}{repo}/{path}?'.format(pythonista_url=PYTHONISTA_URL, repo=self.repo, path=path)
 		}
 		self._send_to_working_copy(action, payload)
 
@@ -133,12 +136,12 @@ class WorkingCopySync():
 
 	def overwrite_with_wc_copy(self):
 		action = 'read'
-		fmt = 'pythonista3://{install_path}/{wc_file}?action=run&argv=overwrite_file&argv={path}&argv='
+		fmt = '{pythonista_url}{install_path}/{wc_file}?action=run&argv=overwrite_file&argv={path}&argv='
 		payload = {
 			'repo': self.repo,
 			'path': self.path,
 			'base64': '1',
-			'x-success': fmt.format(install_path=self.install_path, path=editor.get_path(), wc_file=WC_FILENAME)
+			'x-success': fmt.format(pythonista_url=PYTHONISTA_URL, install_path=self.install_path, path=editor.get_path(), wc_file=WC_FILENAME)
 		}
 		self._send_to_working_copy(action, payload)
 

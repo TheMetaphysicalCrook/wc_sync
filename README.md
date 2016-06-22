@@ -1,3 +1,5 @@
+If you are using Pythonista 2.x you will need to change the PYTHONISTA_URL constant to `pythonista2://`.
+
 ## Installation
 
 1. Clone/download this repo to pythonista.
