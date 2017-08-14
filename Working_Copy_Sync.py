@@ -8,8 +8,6 @@ import keychain
 import os
 import shutil
 import sys
-import webbrowser as wb
-import zipfile
 from collections import OrderedDict
 
 try:
@@ -19,74 +17,38 @@ except:
 	from urllib.parse import urlencode
 	python_version = 3
 	
-PYTHONISTA_URL = 'pythonista3://'
-DOCS_DIR = os.path.expanduser('~/Documents')
-WC_FILENAME = os.path.split(__file__)[-1]
-CONFIG_FILE = '.wcsync'
+from WorkingCopyApi import WorkingCopyApi
+	
 
 class WorkingCopySync():
 
-	def __init__(self):
+	def __init__(self, paths, config):
 		self.key = self._get_key()
-		self.install_path = self._find_install_path()
-		self.config = self._get_config()
-		self.repo, self.path = None, None
-		if self.config: 
-			self.repo = self.config['repo-name']
-			# build the path relative to the repo-root
-			self.path = editor.get_path()[len(self.config['repo-root'])+1:]
+		
+		self.paths = paths
+		self.config = config
+		self.repo = self.config.repo
+		self.path = self.config.path
+			
+		self.wcApi = WorkingCopyApi(self.key)
 	
 	@property
 	def repo_path(self):
 		return os.path.join(self.repo, self.path)		
 		
-	def _get_config(self, path=None):
-		''' Dind the config file for the repo recursively.
-				Don't look beyond the docs directory.
-		'''
-		config = None
-		if not path: 
-			path = os.path.dirname(editor.get_path())	
-		config_path = os.path.join(path, CONFIG_FILE)
-		if os.path.exists(config_path):
-			with open(config_path) as f:
-				config = json.loads(f.read())
-				config['repo-root'] = path
-		elif path != DOCS_DIR:
-			new_path = os.path.abspath(os.path.join(path, '..'))
-			config = self._get_config(new_path)
-		return config
-
 	def _get_key(self):
-		''' Retrieve the working copy key or prompt for a new one.
-		'''
+		"""Retrieve the working copy key or prompt for a new one."""
 		key = keychain.get_password('wcSync', 'xcallback')
 		if not key:
 			key = console.password_alert('Working Copy Key')
 			keychain.set_password('wcSync', 'xcallback', key)
 		return key
 
-	def _find_install_path(self):
-		''' Dynamically find the installation path for the script
-		'''
-		app_dir = os.path.realpath(os.path.abspath(os.path.dirname(__file__)))
-		return os.path.relpath(app_dir, DOCS_DIR)
-
-	def _send_to_working_copy(self, action, payload, x_callback_enabled=True):
-		x_callback = 'x-callback-url/' if x_callback_enabled else ''
-		payload['key'] = self.key
-		payload = urlencode(payload).replace('+', '%20')
-		fmt = 'working-copy://{x_callback}{action}/?{payload}'
-		url = fmt.format(x_callback=x_callback, action=action, payload=payload)
-		wb.open(url)
-
 	def _get_repo_list(self):
-		action = 'repos'
-		fmt = '{pythonista_url}{install_path}/{wc_file}?action=run&argv=repo_list&argv='
-		payload = {
-			'x-success': fmt.format(pythonista_url=PYTHONISTA_URL, install_path=self.install_path, wc_file=WC_FILENAME)
-		}
-		self._send_to_working_copy(action, payload)
+		x_success = 'pythonista3://{install_path}/{wc_file}?action=run&argv=repo_list&argv='	
+		x_success = x_success.format(install_path=self.paths.wc_install_path, wc_file=Paths.wc_file)
+		print(x_success)
+		self.wcApi.get_repo_list(x_success)
 
 	def copy_repo_from_wc(self, repo_list=None):
 		''' copy a repo to the local filesystem
@@ -96,23 +58,13 @@ class WorkingCopySync():
 		else:
 			repo_name = dialogs.list_dialog(title='Select repo', items=repo_list)
 			if repo_name:
-				action = 'zip'
-				fmt = '{pythonista_url}{install_path}/{wc_file}?action=run&argv=copy_repo&argv={repo_name}&argv='
-				payload = {
-					'repo': repo_name,
-					'x-success': fmt.format(pythonista_url=PYTHONISTA_URL, install_path=self.install_path, repo_name=repo_name, wc_file=WC_FILENAME)
-				}
-				self._send_to_working_copy(action, payload)
+				x_success = 'pythonista3://{install_path}/{wc_file}?action=run&argv=copy_repo&argv={repo_name}&argv='
+				x_success = x_success.format(install_path=self.paths.wc_install_path, repo_name=repo_name, wc_file=Paths.wc_file)
+				self.wcApi.get_repo(repo_name, x_success)
 
 	def _push_file_to_wc(self, path, contents):
-		action = 'write'
-		payload = {
-			'repo': self.repo,
-			'path': path,
-			'text': contents,
-			'x-success': '{pythonista_url}{repo}/{path}?'.format(pythonista_url=PYTHONISTA_URL, repo=self.repo, path=path)
-		}
-		self._send_to_working_copy(action, payload)
+		x_success = 'pythonista3://{repo}/{path}?'.format(repo=self.repo, path=path)
+		self.wcApi.push_file(self.repo, path, contents, x_success)
 
 	def push_current_file_to_wc(self):
 		self._push_file_to_wc(self.path, editor.get_text())
@@ -127,7 +79,7 @@ class WorkingCopySync():
 
 	def _get_pyui_contents_for_file(self):
 		rel_pyui_path = self.path + 'ui'
-		full_pyui_path = os.path.join(DOCS_DIR, self.repo, rel_pyui_path)
+		full_pyui_path = os.path.join(self.paths.docs, self.repo, rel_pyui_path)
 		try:
 			with open(full_pyui_path) as f:
 				return rel_pyui_path, f.read()
@@ -135,23 +87,13 @@ class WorkingCopySync():
 			return None, None
 
 	def overwrite_with_wc_copy(self):
-		action = 'read'
-		fmt = '{pythonista_url}{install_path}/{wc_file}?action=run&argv=overwrite_file&argv={path}&argv='
-		payload = {
-			'repo': self.repo,
-			'path': self.path,
-			'base64': '1',
-			'x-success': fmt.format(pythonista_url=PYTHONISTA_URL, install_path=self.install_path, path=editor.get_path(), wc_file=WC_FILENAME)
-		}
-		self._send_to_working_copy(action, payload)
+		x_success = 'pythonista3://{install_path}/{wc_file}?action=run&argv=overwrite_file&argv={path}&argv='
+		x_success = x_success.format(install_path=self.paths.wc_install_path, path=editor.get_path(), wc_file=Paths.wc_file)
+		self.wcApi.get_file(self.repo, self.path, x_success)
 
 	def open_repo_in_wc(self):
-		action = 'open'
-		payload = {
-			'repo': self.repo
-		}
-		self._send_to_working_copy(action, payload, x_callback_enabled=False)
-
+		self.wcApi.open(self.repo)
+		
 	def present(self):
 		actions = OrderedDict()
 		actions['CLONE 	- Copy repo from Working Copy'] = self.copy_repo_from_wc
@@ -163,50 +105,24 @@ class WorkingCopySync():
 		action = dialogs.list_dialog(title='Choose action', items=[key for key in actions])
 		if action:
 			actions[action]()
-
-	def urlscheme_copy_repo_from_wc(self, path, b64_contents):
-		tmp_zip_location = self.install_path + 'repo.zip'
-		dest = os.path.join(DOCS_DIR, path)
-		try:
-			os.makedirs(dest)
-		except OSError as e:
-			if e.errno != errno.EEXIST:
-				raise e
-			console.alert('Overwriting existing directory', button1='Continue')
-			shutil.rmtree(dest)
-		zip_file_location = os.path.join(DOCS_DIR, tmp_zip_location)
-		with open(zip_file_location, 'wb') as out_file:
-			out_file.write(base64.b64decode(b64_contents))
-		with zipfile.ZipFile(zip_file_location) as in_file:
-			in_file.extractall(dest)
-		os.remove(zip_file_location)
-		with open(os.path.join(dest, CONFIG_FILE), 'w') as config_file:
-			config_file.write(json.dumps({"repo-name": path}))
-		console.hud_alert(path + ' Downloaded')
-
-	def urlscheme_overwrite_file_with_wc_copy(self, path, b64_contents):
-		text = base64.b64decode(b64_contents)
-		full_file_path = os.path.join(DOCS_DIR, path)
-		try:
-			os.makedirs(full_file_path)
-		except OSError as e:
-			if e.errno != errno.EEXIST:
-				raise e
-		with open(full_file_path, 'wb') as f:
-			f.write(text)
-		editor.open_file(path)
-		_, filename = os.path.split(path)
-		console.hud_alert(filename + ' Updated')
-
+			
 
 def main(url_action=None, url_args=None):
-	wc = WorkingCopySync()
-	if not url_action:
+	from Helpers import Paths, Config
+	from XCallbackHandler import XCallbackHandler
+	
+	
+	config = Config()
+	
+	wc = WorkingCopySync(Paths, config)
+	xc = XCallbackHandler(Paths, Config.filename)
+	
+	if not url_action or url_action.endswith(wc.repo_path):
 		wc.present()
 	elif url_action == 'copy_repo':
-		wc.urlscheme_copy_repo_from_wc(url_args[0], url_args[1])
+		xc.copy_repo(url_args[0], url_args[1])
 	elif url_action == 'overwrite_file':
-		wc.urlscheme_overwrite_file_with_wc_copy(url_args[0], url_args[1])
+		xc.copy_file(url_args[0], url_args[1])
 	elif url_action == 'repo_list':
 		wc.copy_repo_from_wc(repo_list=[repo['name'] for repo in json.loads(url_args[0])])
 	else:
