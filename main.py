@@ -8,13 +8,6 @@ import shutil
 import sys
 from collections import OrderedDict
 
-try:
-	from urllib import urlencode
-	python_version = 2
-except:
-	from urllib.parse import urlencode
-	python_version = 3
-	
 from api import WorkingCopyApi
 	
 
