@@ -1,10 +1,8 @@
-import base64
 import console
 import dialogs
 import editor
-import errno
-import json
 import keychain
+import json
 import os
 import shutil
 import sys
@@ -17,7 +15,7 @@ except:
 	from urllib.parse import urlencode
 	python_version = 3
 	
-from WorkingCopyApi import WorkingCopyApi
+from api import WorkingCopyApi
 	
 
 class WorkingCopySync():
@@ -46,7 +44,7 @@ class WorkingCopySync():
 
 	def _get_repo_list(self):
 		x_success = 'pythonista3://{install_path}/{wc_file}?action=run&argv=repo_list&argv='	
-		x_success = x_success.format(install_path=self.paths.wc_install_path, wc_file=Paths.wc_file)
+		x_success = x_success.format(install_path=self.paths.wc_install_path, wc_file=self.paths.wc_file)
 		print(x_success)
 		self.wcApi.get_repo_list(x_success)
 
@@ -59,7 +57,7 @@ class WorkingCopySync():
 			repo_name = dialogs.list_dialog(title='Select repo', items=repo_list)
 			if repo_name:
 				x_success = 'pythonista3://{install_path}/{wc_file}?action=run&argv=copy_repo&argv={repo_name}&argv='
-				x_success = x_success.format(install_path=self.paths.wc_install_path, repo_name=repo_name, wc_file=Paths.wc_file)
+				x_success = x_success.format(install_path=self.paths.wc_install_path, repo_name=repo_name, wc_file=self.paths.wc_file)
 				self.wcApi.get_repo(repo_name, x_success)
 
 	def _push_file_to_wc(self, path, contents):
@@ -88,7 +86,7 @@ class WorkingCopySync():
 
 	def overwrite_with_wc_copy(self):
 		x_success = 'pythonista3://{install_path}/{wc_file}?action=run&argv=overwrite_file&argv={path}&argv='
-		x_success = x_success.format(install_path=self.paths.wc_install_path, path=editor.get_path(), wc_file=Paths.wc_file)
+		x_success = x_success.format(install_path=self.paths.wc_install_path, path=editor.get_path(), wc_file=self.paths.wc_file)
 		self.wcApi.get_file(self.repo, self.path, x_success)
 
 	def open_repo_in_wc(self):
@@ -108,14 +106,13 @@ class WorkingCopySync():
 			
 
 def main(url_action=None, url_args=None):
-	from Helpers import Paths, Config
-	from XCallbackHandler import XCallbackHandler
-	
+	from helpers import Paths, Config
+	import xcallback
 	
 	config = Config()
 	
 	wc = WorkingCopySync(Paths, config)
-	xc = XCallbackHandler(Paths, Config.filename)
+	xc = xcallback.Handler(Paths, Config.filename)
 	
 	if not url_action or url_action.endswith(wc.repo_path):
 		wc.present()

@@ -8,10 +8,10 @@ import zipfile
 import console
 import editor
 
-from Helpers import Paths, Config
+from helpers import Paths, Config
 
 
-class XCallbackHandler():
+class Handler():
 	
 	def __init__(self, paths, config_filename):
 		self.tmp_directory = paths.wc_install_path
@@ -58,17 +58,3 @@ class XCallbackHandler():
 		_, filename = os.path.split(path)
 		console.hud_alert(filename + ' Updated')
 		
-
-def main(actions, args):
-	handler = XCallbackHandler(Paths, Config.filename)
-	if url_action == 'copy_repo':
-		wc.urlscheme_copy_repo_from_wc(url_args[0], url_args[1])
-	elif url_action == 'overwrite_file':
-		wc.urlscheme_overwrite_file_with_wc_copy(url_args[0], url_args[1])
-				
-if __name__ == '__main__':
-	url_action, url_args = None, None
-	if len(sys.argv) > 1:
-		url_action = sys.argv[1]
-		url_args = sys.argv[2:]
-	main(url_action, url_args)
