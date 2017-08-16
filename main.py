@@ -38,8 +38,7 @@ class WorkingCopySync():
 	def _get_repo_list(self):
 		x_success = 'pythonista3://{install_path}/{wc_file}?action=run&argv=repo_list&argv='	
 		x_success = x_success.format(install_path=self.paths.wc_install_path, wc_file=self.paths.wc_file)
-		print(x_success)
-		self.wcApi.get_repo_list(x_success)
+		self.wcApi.repos(x_success=x_success)
 
 	def copy_repo_from_wc(self, repo_list=None):
 		''' copy a repo to the local filesystem
@@ -51,11 +50,11 @@ class WorkingCopySync():
 			if repo_name:
 				x_success = 'pythonista3://{install_path}/{wc_file}?action=run&argv=copy_repo&argv={repo_name}&argv='
 				x_success = x_success.format(install_path=self.paths.wc_install_path, repo_name=repo_name, wc_file=self.paths.wc_file)
-				self.wcApi.get_repo(repo_name, x_success)
+				self.wcApi.zip(repo=repo_name, x_success=x_success)
 
 	def _push_file_to_wc(self, path, contents):
 		x_success = 'pythonista3://{repo}/{path}?'.format(repo=self.repo, path=path)
-		self.wcApi.push_file(self.repo, path, contents, x_success)
+		self.wcApi.write(repo=self.repo, path=path, text=contents, x_success=x_success)
 
 	def push_current_file_to_wc(self):
 		self._push_file_to_wc(self.path, editor.get_text())
@@ -80,10 +79,10 @@ class WorkingCopySync():
 	def overwrite_with_wc_copy(self):
 		x_success = 'pythonista3://{install_path}/{wc_file}?action=run&argv=overwrite_file&argv={path}&argv='
 		x_success = x_success.format(install_path=self.paths.wc_install_path, path=editor.get_path(), wc_file=self.paths.wc_file)
-		self.wcApi.get_file(self.repo, self.path, x_success)
+		self.wcApi.read(repo=self.repo, path=self.path, x_success=x_success)
 
 	def open_repo_in_wc(self):
-		self.wcApi.open(self.repo)
+		self.wcApi.open(repo=self.repo)
 		
 	def present(self):
 		actions = OrderedDict()
