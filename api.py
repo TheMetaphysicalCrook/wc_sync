@@ -25,8 +25,7 @@ class WorkingCopyApi():
 		payload = kwargs
 		if 'x_success' in payload:
 			payload['x-success'] = payload.pop('x_success')
-		
-		x_callback = 'x-callback-url/' if 'x-success' in payload else ''
+			x_callback = 'x-callback-url/'
 		
 		payload['key'] = self.key
 		if action == 'read':
