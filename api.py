@@ -14,12 +14,6 @@ class WorkingCopyApi():
 
 	def __getattr__(self, attr):
 		return functools.partial(self._send_request, action=attr)
-		
-	def __getattribute__(self, attr):
-		result = object.__getattribute__(self, attr)
-		if result:
-			return result
-		raise AttributeError()
 
 	def _send_request(self, action, **kwargs):
 		payload = kwargs
