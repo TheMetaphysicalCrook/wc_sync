@@ -17,9 +17,11 @@ class Config:
 	
 	def __init__(self):
 		config = self._load_config()
-		self.repo = config['repo-name']
-		# build the path relative to the repo-root
-		self.path = editor.get_path()[len(config['repo-root'])+1:]
+		self.repo, self.path = None, None
+		if config:
+			self.repo = config['repo-name']
+			# build the path relative to the repo-root
+			self.path = editor.get_path()[len(config['repo-root'])+1:]
 			
 	def _load_config(self, path=None):
 		"""Dind the config file for the repo recursively.

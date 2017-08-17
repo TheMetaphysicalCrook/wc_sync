@@ -106,7 +106,7 @@ def main(url_action=None, url_args=None):
 	wc = WorkingCopySync(Paths, config)
 	xc = xcallback.Handler(Paths, Config.filename)
 	
-	if not url_action or url_action.endswith(wc.repo_path):
+	if not url_action or url_action == editor.get_path():
 		wc.present()
 	elif url_action == 'copy_repo':
 		xc.copy_repo(url_args[0], url_args[1])
