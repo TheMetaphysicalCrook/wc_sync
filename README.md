@@ -1,3 +1,5 @@
+__With the new file changes from Apple for iOS 11 and beta release of Pythonista, this project is no longer needed and is way more cumbesome than the built in tools. Use those.__
+
 If you are using Pythonista 2.x you will need to change the PYTHONISTA_URL constant to `pythonista2://`.
 
 ## Installation
