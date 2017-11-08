@@ -20,6 +20,8 @@ class WorkingCopyApi():
 		if 'x_success' in payload:
 			payload['x-success'] = payload.pop('x_success')
 			x_callback = 'x-callback-url/'
+		else:
+			x_callback = ''
 		
 		payload['key'] = self.key
 		if action == 'read':
